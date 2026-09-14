@@ -9,12 +9,17 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.udistrital.minigolf.model.Ball
 import com.udistrital.minigolf.model.GameState
 import com.udistrital.minigolf.model.Hole
+import com.udistrital.minigolf.util.ScoreStore
 import com.udistrital.minigolf.view.GolfFieldView
 import kotlin.math.sqrt
 
@@ -24,6 +29,7 @@ class MainActivity : Activity(), SensorEventListener {
     private lateinit var tvHoleInfo: TextView
     private lateinit var tvStrokes: TextView
     private lateinit var btnReset: Button
+    private lateinit var btnBack: ImageButton
 
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
@@ -56,15 +62,29 @@ class MainActivity : Activity(), SensorEventListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Evita que el HUD (golpes, hoyo, botón volver) o el botón de
+        // reinicio queden ocultos detrás de la barra de estado o de
+        // navegación (edge-to-edge en Android 15+). Sin esto, en pantallas
+        // donde el sistema dibuja encima del contenido se ve solo una
+        // parte de la interfaz.
+        val root = findViewById<View>(R.id.gameRoot)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+
         golfFieldView = findViewById(R.id.golfFieldView)
         tvHoleInfo = findViewById(R.id.tvHoleInfo)
         tvStrokes = findViewById(R.id.tvStrokes)
         btnReset = findViewById(R.id.btnReset)
+        btnBack = findViewById(R.id.btnBack)
 
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
         btnReset.setOnClickListener { onResetClicked() }
+        btnBack.setOnClickListener { finish() }
 
         renderInitialState()
         handler.post(physicsRunnable)
@@ -85,17 +105,17 @@ class MainActivity : Activity(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             // Invertimos X porque la inclinación a la derecha da valores negativos en el sensor
-            tiltX = -event.values[0] 
+            tiltX = -event.values[0]
             tiltY = event.values[1]
 
             // Enviamos la inclinación a la vista para la guía visual
             golfFieldView.setTilt(tiltX, tiltY)
 
             // Detectar un "golpe" brusco
-            val totalAcceleration = sqrt(event.values[0] * event.values[0] + 
-                                         event.values[1] * event.values[1] + 
-                                         event.values[2] * event.values[2])
-            
+            val totalAcceleration = sqrt(event.values[0] * event.values[0] +
+                    event.values[1] * event.values[1] +
+                    event.values[2] * event.values[2])
+
             // Si hay un pico de aceleración y la pelota está quieta, disparamos
             if (totalAcceleration > 15f && Math.abs(ball.vx) < 0.1f && Math.abs(ball.vy) < 0.1f) {
                 shootBall()
@@ -131,6 +151,7 @@ class MainActivity : Activity(), SensorEventListener {
         // Verificar si entró al hoyo
         if (gameState.checkHole(ball, hole)) {
             ball.stop()
+            ScoreStore.saveIfBetter(this, gameState.strokes)
             val message = "¡Felicitaciones! Metiste la pelota en ${gameState.strokes} golpes"
             Toast.makeText(this, message, Toast.LENGTH_LONG).show()
 

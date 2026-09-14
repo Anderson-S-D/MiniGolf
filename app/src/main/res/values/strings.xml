@@ -1,4 +1,15 @@
 <resources>
     <string name="app_name">MiniGolf</string>
     <string name="reiniciar_hoyo">Reiniciar hoyo</string>
+
+    <!-- Pantalla de inicio -->
+    <string name="nombre_juego">⛳ Mini Golf</string>
+    <string name="bienvenida">¡Bienvenido! Golpea el celular como si fuera el palo y lleva la bola al hoyo.</string>
+    <string name="iniciar_juego">Iniciar juego</string>
+    <string name="mejor_puntaje_valor">Mejor puntaje: %1$d golpes</string>
+    <string name="mejor_puntaje_vacio">Aún no hay puntaje registrado</string>
+
+    <!-- Pantalla del juego -->
+    <string name="instrucciones_golpe">Inclina el celular y realiza un golpe (swing) para lanzar la bola</string>
+    <string name="volver">Volver al menú</string>
 </resources>

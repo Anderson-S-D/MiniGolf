@@ -7,4 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Paleta del mini golf, coherente con el verde del campo de juego -->
+    <color name="golf_green_dark">#1B5E20</color>
+    <color name="golf_green">#2E7D32</color>
+    <color name="golf_green_light">#66BB6A</color>
 </resources>
