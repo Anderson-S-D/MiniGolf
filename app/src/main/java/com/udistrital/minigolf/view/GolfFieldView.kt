@@ -18,9 +18,17 @@ class GolfFieldView @JvmOverloads constructor(
     private val fieldPaint = Paint().apply { color = "#2E7D32".toColorInt() } // verde césped
     private val holePaint = Paint().apply { color = Color.BLACK }
     private val ballPaint = Paint().apply { color = Color.WHITE }
+    private val guidePaint = Paint().apply {
+        color = Color.WHITE
+        alpha = 150
+        strokeWidth = 5f
+        style = Paint.Style.STROKE
+    }
 
     private var ball: Ball? = null
     private var hole: Hole? = null
+    private var tiltX: Float = 0f
+    private var tiltY: Float = 0f
 
     /**
      * Único punto de entrada para actualizar qué se dibuja.
@@ -29,7 +37,13 @@ class GolfFieldView @JvmOverloads constructor(
     fun setElements(ball: Ball, hole: Hole) {
         this.ball = ball
         this.hole = hole
-        invalidate() // solicita un redibujado
+        invalidate()
+    }
+
+    fun setTilt(x: Float, y: Float) {
+        this.tiltX = x
+        this.tiltY = y
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -42,8 +56,17 @@ class GolfFieldView @JvmOverloads constructor(
             canvas.drawCircle(it.x, it.y, it.radius, holePaint)
         }
 
-        ball?.let {
-            canvas.drawCircle(it.x, it.y, it.radius, ballPaint)
+        ball?.let { b ->
+            // Dibujar línea de guía si la pelota está quieta
+            if (Math.abs(b.vx) < 0.1f && Math.abs(b.vy) < 0.1f) {
+                // Multiplicamos por un factor para que la línea sea visible (ej. 50)
+                canvas.drawLine(
+                    b.x, b.y,
+                    b.x + tiltX * 50f, b.y + tiltY * 50f,
+                    guidePaint
+                )
+            }
+            canvas.drawCircle(b.x, b.y, b.radius, ballPaint)
         }
     }
 }
