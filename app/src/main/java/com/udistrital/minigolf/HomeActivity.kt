@@ -9,7 +9,6 @@ import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.udistrital.minigolf.util.ScoreStore
-
 /**
  * Pantalla de inicio del juego.
  * Responsabilidad única: mostrar el nombre del juego, el mejor puntaje

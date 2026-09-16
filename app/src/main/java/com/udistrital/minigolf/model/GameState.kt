@@ -1,5 +1,4 @@
 package com.udistrital.minigolf.model
-
 /**
  * Estado de la partida actual. Responsabilidad única:
  * mantener y mutar el estado del juego (golpes, hoyo, par).

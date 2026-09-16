@@ -202,7 +202,6 @@ class MainActivity : Activity(), SensorEventListener {
         golfFieldView.setElements(ball, hole)
         updateHud()
     }
-
     private fun updateHud() {
         tvHoleInfo.text = "Hoyo ${gameState.holeNumber} - Par ${gameState.par}"
         tvStrokes.text = "Golpes: ${gameState.strokes}"
