@@ -12,6 +12,7 @@ import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.ViewCompat
@@ -31,6 +32,7 @@ class MainActivity : Activity(), SensorEventListener {
     private lateinit var btnReset: Button
     private lateinit var btnBack: ImageButton
 
+    private lateinit var forceBar: ProgressBar
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
 
@@ -61,7 +63,7 @@ class MainActivity : Activity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        forceBar = findViewById(R.id.forceBar)
         // Evita que el HUD (golpes, hoyo, botón volver) o el botón de
         // reinicio queden ocultos detrás de la barra de estado o de
         // navegación (edge-to-edge en Android 15+). Sin esto, en pantallas
@@ -104,19 +106,28 @@ class MainActivity : Activity(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-            // Invertimos X porque la inclinación a la derecha da valores negativos en el sensor
             tiltX = -event.values[0]
             tiltY = event.values[1]
 
-            // Enviamos la inclinación a la vista para la guía visual
+            // Enviamos la inclinación a la vista
             golfFieldView.setTilt(tiltX, tiltY)
+
+            // --- NUEVO: MEDIDOR DE POTENCIA EN VIVO ---
+            // Solo actualizamos la barra si la pelota está quieta (estás apuntando)
+            if (Math.abs(ball.vx) < 0.1f && Math.abs(ball.vy) < 0.1f) {
+                // Calculamos la fuerza potencial basada en la inclinación
+                val potentialForce = Math.hypot(tiltX.toDouble() * 2.0, tiltY.toDouble() * 2.0).toFloat()
+                val maxForce = 25f
+                val progress = ((potentialForce / maxForce) * 100).toInt()
+
+                forceBar.progress = progress.coerceIn(0, 100)
+            }
 
             // Detectar un "golpe" brusco
             val totalAcceleration = sqrt(event.values[0] * event.values[0] +
                     event.values[1] * event.values[1] +
                     event.values[2] * event.values[2])
 
-            // Si hay un pico de aceleración y la pelota está quieta, disparamos
             if (totalAcceleration > 15f && Math.abs(ball.vx) < 0.1f && Math.abs(ball.vy) < 0.1f) {
                 shootBall()
             }
@@ -126,9 +137,21 @@ class MainActivity : Activity(), SensorEventListener {
     private fun shootBall() {
         if (gameState.isGameOver) return
 
-        // La fuerza del disparo depende de la inclinación actual
+        // La fuerza del disparo actual
         ball.vx = tiltX * 2f
         ball.vy = tiltY * 2f
+
+        // 1. Calcular la magnitud de la fuerza usando la hipotenusa
+        val forceMagnitude = Math.hypot(ball.vx.toDouble(), ball.vy.toDouble()).toFloat()
+
+        // 2. Definir una fuerza máxima esperada para calcular el porcentaje
+        // Un valor de 25f es un buen límite superior basado en la gravedad
+        val maxForce = 25f
+
+        val progress = ((forceMagnitude / maxForce) * 100).toInt()
+
+        forceBar.progress = progress.coerceIn(0, 100)
+
         gameState.incrementStroke()
         updateHud()
     }
@@ -139,6 +162,9 @@ class MainActivity : Activity(), SensorEventListener {
         ball.update(friction = 0.98f)
 
         // Colisiones con bordes (basado en el tamaño de la vista)
+        if (Math.abs(ball.vx) < 0.1f && Math.abs(ball.vy) < 0.1f) {
+            forceBar.progress = 0
+        }
         if (ball.x - ball.radius < 0 || ball.x + ball.radius > golfFieldView.width) {
             ball.vx *= -0.5f // Rebote con pérdida de energía
             ball.x = if (ball.x - ball.radius < 0) ball.radius else golfFieldView.width - ball.radius
